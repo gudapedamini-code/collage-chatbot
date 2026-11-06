@@ -1,0 +1,17 @@
+# Protect .env and sensitive files
+<Files ".env">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Only allow PHP files to run
+<FilesMatch "\.php$">
+    Order allow,deny
+    Allow from all
+</FilesMatch>
+
+# Block direct access to non-PHP files
+<FilesMatch "\.(sql|log|bak|txt)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COET Akola - College of Engineering and Technology</title>
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Hind:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ========== NAVBAR ========== -->
+<nav class="navbar">
+  <div class="nav-logo">
+    <img src="images/logo.png" alt="COET Logo" class="nav-logo-img" onerror="this.style.display='none'">
+    <div class="nav-logo-text">
+      <h1>COET <span class="accent">Akola</span></h1>
+      <p>Shri Shivaji Education Society</p>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="#">Home</a>
+    <a href="#">Courses</a>
+    <a href="#">Departments</a>
+    <a href="#">Admissions</a>
+    <a href="#">Contact</a>
+  </div>
+  <span class="nav-badge">NAAC Grade A</span>
+</nav>
+
+<!-- ========== HERO ========== -->
+<section class="hero" id="heroSection">
+  <video id="bgVideo" class="bg-video" autoplay muted playsinline></video>
+  <div class="video-overlay"></div>
+
+  <div class="hero-content">
+
+    <!-- LEFT -->
+    <div class="hero-left">
+      <div class="badge-pill">⭐ AICTE Approved · SGBAU Affiliated</div>
+      <h2 class="hero-welcome">WELCOME TO</h2>
+      <h3 class="hero-college">College of Engineering<br>and Technology, <span class="accent">Akola</span></h3>
+      <p class="hero-desc">Shaping engineers and innovators since decades.<br>Quality education, world-class facilities, and 350+ placements.</p>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-num">350+</div><div class="stat-lbl">Placements</div></div>
+        <div class="stat-card"><div class="stat-num">11</div><div class="stat-lbl">Courses</div></div>
+        <div class="stat-card"><div class="stat-num">NAAC A</div><div class="stat-lbl">Accredited</div></div>
+        <div class="stat-card"><div class="stat-num">24/7</div><div class="stat-lbl">Campus</div></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: CHAT BOT -->
+    <div class="chat-card" id="chatCard">
+
+      <!-- Header -->
+      <div class="card-header">
+        <div class="bot-avatar">
+          <img src="images/bot.png" alt="bot" class="bot-img" onerror="this.textContent='🤖';this.style.fontSize='24px';">
+        </div>
+        <div class="card-header-text">
+          <h3>COET Akola Bot <span class="ai-powered-badge">✨ AI</span></h3>
+          <p><span class="online-dot"></span> Online · College Assistant</p>
+        </div>
+        <select class="lang-dropdown" id="langDropdown" onchange="setLang(this.value)">
+          <option value="en">English</option>
+          <option value="hi">हिंदी</option>
+          <option value="mr">मराठी</option>
+        </select>
+      </div>
+
+      <!-- Chat Area -->
+      <div class="chat-area">
+        <div id="chatBox"></div>
+
+        <!-- Quick Chips -->
+        <div class="quick-chips" id="quickChips">
+          <button class="chip" onclick="quickAsk('principal')">🎓 Principal</button>
+          <button class="chip" onclick="quickAsk('courses')">📚 Courses</button>
+          <button class="chip" onclick="quickAsk('fee')">💰 Fees</button>
+          <button class="chip" onclick="quickAsk('hostel')">🏠 Hostel</button>
+          <button class="chip" onclick="quickAsk('placement')">💼 Placement</button>
+          <button class="chip" onclick="quickAsk('admission')">📋 Admission</button>
+          <button class="chip" onclick="quickAsk('library')">📖 Library</button>
+          <button class="chip" onclick="quickAsk('canteen')">🍽️ Canteen</button>
+          <button class="chip" onclick="quickAsk('transport')">🚌 Transport</button>
+          <button class="chip" onclick="quickAsk('contact')">📞 Contact</button>
+          <button class="chip" onclick="quickAsk('departments')">🏗️ Departments</button>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="input-row">
+        <input type="text" id="userMsg" placeholder="Type your question..."
+          autocomplete="off" onkeydown="if(event.key==='Enter') sendMessage()">
+        <button class="btn-send" id="sendBtn" onclick="sendMessage()">
+          <svg viewBox="0 0 24 24" fill="white" width="18" height="18">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+        </button>
+        <button class="btn-mic" id="micBtn" onclick="startVoice()">
+          <svg viewBox="0 0 24 24" fill="white" width="16" height="16">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zm5 11a5 5 0 0 1-10 0H5a7 7 0 0 0 14 0h-2zm-5 7v-2.07A7 7 0 0 1 5.07 12H3a9 9 0 0 0 17.93 0h-2.07A7 7 0 0 1 13 18.93V19h2v2H9v-2h2z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="mic-hint" id="micStatus"></div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FAB when minimized -->
+<div class="fab-wrap" id="fabWrap" style="display:none;">
+  <button class="fab-btn" onclick="openChat()">💬</button>
+  <span class="fab-label">Ask AI</span>
+</div>
+
+<script src="script.js"></script>
+<!-- face-api for age/gender detection -->
+<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
+<!-- ══ SMART GREETING OVERLAY ══ -->
+<div class="greeting-overlay" id="greetingOverlay">
+  <div class="greet-particles" id="greetParticles"></div>
+
+  <div class="visitor-badge" id="visitorBadge">
+    <span class="visitor-icon">👥</span>
+    <span id="visitorCount">...</span>
+    <span class="visitor-lbl">Visitors Today</span>
+  </div>
+
+  <div class="greet-card" id="greetCard">
+    <!-- Animated Bot Avatar -->
+    <div class="bot-avatar-wrap">
+      <div class="bot-avatar-ring ring1"></div>
+      <div class="bot-avatar-ring ring2"></div>
+      <div class="bot-avatar-body" id="botAvatarBody">
+        <svg class="bot-svg" id="botSvg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="botBody" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1e88e5"/><stop offset="100%" stop-color="#0d47a1"/>
+            </linearGradient>
+            <linearGradient id="screenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#0a1628"/><stop offset="100%" stop-color="#0d2348"/>
+            </linearGradient>
+          </defs>
+          <rect x="20" y="22" width="80" height="72" rx="18" fill="url(#botBody)"/>
+          <line x1="60" y1="22" x2="60" y2="8" stroke="#4fc3f7" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="60" cy="6" r="5" fill="#4fc3f7" class="bot-antenna-blink"/>
+          <rect x="28" y="32" width="64" height="48" rx="10" fill="url(#screenGrad)"/>
+          <circle cx="44" cy="52" r="7" fill="#00e5ff" class="bot-eye-left" opacity=".9"/>
+          <circle cx="76" cy="52" r="7" fill="#00e5ff" class="bot-eye-right" opacity=".9"/>
+          <circle cx="46" cy="50" r="2.5" fill="white" opacity=".8"/>
+          <circle cx="78" cy="50" r="2.5" fill="white" opacity=".8"/>
+          <path id="botMouth" d="M 42 68 Q 60 80 78 68" stroke="#00e5ff" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <rect x="12" y="42" width="10" height="20" rx="5" fill="#1565c0"/>
+          <rect x="98" y="42" width="10" height="20" rx="5" fill="#1565c0"/>
+          <circle cx="17" cy="52" r="3" fill="#4fc3f7" class="bot-ear-pulse"/>
+          <circle cx="103" cy="52" r="3" fill="#4fc3f7" class="bot-ear-pulse"/>
+        </svg>
+        <div class="speak-waves" id="speakWaves">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Text -->
+    <div class="greet-text-wrap">
+      <div class="greet-detecting" id="greetDetecting">
+        <div class="detect-spinner"></div>
+        <span id="detectLabel">Detecting visitor...</span>
+      </div>
+      <div class="greet-message-box" id="greetMessageBox" style="display:none">
+        <div class="greet-hello" id="greetHello"></div>
+        <div class="greet-sub"   id="greetSub"></div>
+      </div>
+    </div>
+
+    <!-- Hidden camera -->
+    <video id="faceVideo" autoplay muted playsinline style="display:none;width:1px;height:1px;position:absolute;opacity:0"></video>
+
+    <!-- Language -->
+    <div class="greet-lang-row">
+      <button class="glang-btn active" onclick="setGreetLang('en')" id="gl_en">EN</button>
+      <button class="glang-btn" onclick="setGreetLang('hi')" id="gl_hi">हिं</button>
+      <button class="glang-btn" onclick="setGreetLang('mr')" id="gl_mr">मरा</button>
+    </div>
+
+    <button class="greet-enter-btn" id="greetEnterBtn" onclick="closeGreeting()">
+      <span id="greetEnterText">Enter College Portal →</span>
+    </button>
+    <p class="greet-skip" onclick="closeGreeting()">Skip</p>
+  </div>
+</div>
+
+</body>
+</html>

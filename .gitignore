@@ -1,0 +1,16 @@
+# Environment configuration (Contains sensitive keys & credentials)
+backend/.env
+.env
+*.env.local
+
+# OS generated files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# IDE and Editor files
+.vscode/
+.idea/
+
+# Temporary and log files
+*.log
