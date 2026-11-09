@@ -371,8 +371,11 @@ function fetchBackend(msg) {
   showTyping();
 
   // Bulletproof dynamic API URL resolution:
-  // Works on localhost (any port), subfolders, or root domain
+  // Supports custom Render/external backend URL or automatic relative path
   const API_URL = (function() {
+    if (window.COET_API_URL) {
+      return window.COET_API_URL;
+    }
     const loc = window.location;
     if (loc.pathname.includes('/frontend/')) {
       return '../backend/chat.php';
