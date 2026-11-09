@@ -1,6 +1,6 @@
 <?php
 // ============================================================
-//  DATABASE CONNECTION — COET Akola (Production Ready)
+//  DATABASE CONNECTION — COET Akola (Production & Vercel Ready)
 // ============================================================
 
 if (!function_exists('loadEnv')) {
@@ -14,7 +14,6 @@ if (!function_exists('loadEnv')) {
             list($key, $value) = explode('=', $line, 2);
             $key = trim($key); 
             $value = trim($value);
-            // Remove surrounding quotes if present
             $value = trim($value, "\"'");
             if (!empty($key)) { 
                 putenv("$key=$value"); 
@@ -39,18 +38,14 @@ if (function_exists('mysqli_report')) {
 try {
     $conn = @new mysqli($DB_HOST, $DB_USER, $DB_PASS, $DB_NAME);
 } catch (Exception $e) {
-    $conn = false;
+    $conn = null;
 }
 
-if (!$conn || $conn->connect_error) {
-    http_response_code(500);
-    echo json_encode([
-        "error" => "Database connection failed.",
-        "reply" => "⚠️ <b>डेटाबेस एरर / Database Error:</b><br>डेटाबेसशी संपर्क होऊ शकला नाही. कृपया .env फाईल तपासा आणि MySQL चालू असल्याची खात्री करा.<br><i>(Check .env file and ensure MySQL is running)</i>",
-        "hint"  => "Check .env file and make sure MySQL is running."
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
+if ($conn && $conn->connect_error) {
+    $conn = null;
 }
 
-$conn->set_charset("utf8mb4");
+if ($conn) {
+    $conn->set_charset("utf8mb4");
+}
 ?>
