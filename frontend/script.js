@@ -377,6 +377,10 @@ function fetchBackend(msg) {
       return window.COET_API_URL;
     }
     const loc = window.location;
+    // When hosted on Vercel, forward API calls to the Render backend service
+    if (loc.hostname.includes('vercel.app')) {
+      return 'https://collage-chatbot.onrender.com/backend/chat.php';
+    }
     if (loc.pathname.includes('/frontend/')) {
       return '../backend/chat.php';
     }

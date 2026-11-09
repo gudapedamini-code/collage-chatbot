@@ -1,27 +1,13 @@
 {
-  "version": 2,
-  "functions": {
-    "backend/*.php": {
-      "runtime": "vercel-php@0.7.3"
-    }
-  },
-  "routes": [
+  "cleanUrls": true,
+  "rewrites": [
     {
-      "src": "/api/chat.php",
-      "dest": "/backend/chat.php"
+      "source": "/",
+      "destination": "/frontend/index.html"
     },
     {
-      "src": "/backend/(.*)",
-      "dest": "/backend/$1"
-    },
-    {
-      "src": "/frontend/(.*)",
-      "dest": "/frontend/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/frontend/$1"
+      "source": "/(.*)",
+      "destination": "/frontend/$1"
     }
   ]
 }
-
