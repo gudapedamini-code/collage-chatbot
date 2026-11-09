@@ -227,11 +227,17 @@ window.onReplyChip = function(text, action) {
 /* ═══════════════════════════════════════════
    CONVERSATION FLOW
 ═══════════════════════════════════════════ */
+const HOSTEL_IMAGES = ['hostel_front.jpeg', 'hostel_building.jpeg', 'hostel_corridor.jpeg', 'hostel_mess.jpeg', 'hostel6.jpeg'];
+
 function processFlow(action) {
   if (isStreaming) return;
   const lc = action.toLowerCase();
 
-  /* HOSTEL */
+  /* HOSTEL - Show hostel images in background immediately */
+  if (lc === 'hostel' || lc === 'girls_hostel' || lc.startsWith('h_')) {
+    showImgBg(HOSTEL_IMAGES);
+  }
+
   if (lc === 'hostel') {
     convState = 'hostel_type';
     showTyping();
@@ -246,7 +252,7 @@ function processFlow(action) {
         { label:'👧 Girls Hostel', text:'Girls Hostel', action:'girls_hostel' },
         { label:'👦 Boys Hostel',  text:'Boys Hostel',  action:'boys_hostel'  },
       ]);
-    }, 600);
+    }, 300);
     return;
   }
 
@@ -260,14 +266,14 @@ function processFlow(action) {
         hi: '<b>गर्ल्स हॉस्टल</b> के बारे में क्या जानना है?',
         mr: '<b>मुलींच्या वसतिगृहा</b>बद्दल काय जाणून घ्यायचे?'
       }[currentLang];
-      addBotMsg(q, null, [
+      addBotMsg(q, HOSTEL_IMAGES, [
         { label:'🏠 Facilities', text:'Facilities', action:'h_fac'   },
         { label:'💰 Fees',       text:'Fees',       action:'h_fee'   },
         { label:'📜 Rules',      text:'Rules',      action:'h_rules' },
         { label:'📍 Location',   text:'Location',   action:'h_loc'   },
         { label:'📋 Full Info',  text:'Full Info',  action:'h_full'  },
       ]);
-    }, 600);
+    }, 300);
     return;
   }
 
@@ -281,7 +287,7 @@ function processFlow(action) {
         mr: '❌ COET अकोलामध्ये फक्त <b>मुलींचे वसतिगृह</b> आहे.'
       }[currentLang];
       addBotMsg(msg, null, [{ label:'👧 Girls Hostel Info', text:'Girls Hostel', action:'girls_hostel' }]);
-    }, 600);
+    }, 300);
     return;
   }
 
@@ -294,8 +300,8 @@ function processFlow(action) {
         hi: '🏠 <b>सुविधाएं:</b><br>• 24x7 पानी | WiFi | मेस | Study Room | CCTV | वार्डन 24/7',
         mr: '🏠 <b>सुविधा:</b><br>• 24x7 पाणी | WiFi | मेस | अभ्यास कक्ष | CCTV | वार्डन 24/7'
       }[currentLang];
-      streamBotMessage(msg, ['hostel_front.jpeg','hostel_building.jpeg','hostel_corridor.jpeg','hostel_mess.jpeg'], null, () => moreHelp());
-    }, 700); return;
+      streamBotMessage(msg, HOSTEL_IMAGES, null, () => moreHelp());
+    }, 300); return;
   }
   if (lc === 'h_fee') {
     showTyping(); setTimeout(() => {
@@ -306,8 +312,8 @@ function processFlow(action) {
         hi: '💰 <b>वार्षिक शुल्क:</b> ₹24,000 (लगभग)<br>4 लड़कियां/कमरा',
         mr: '💰 <b>वार्षिक शुल्क:</b> ₹24,000 (अंदाजे)<br>4 मुली/खोली'
       }[currentLang];
-      streamBotMessage(msg, null, null, () => moreHelp());
-    }, 700); return;
+      streamBotMessage(msg, HOSTEL_IMAGES, null, () => moreHelp());
+    }, 300); return;
   }
   if (lc === 'h_rules') {
     showTyping(); setTimeout(() => {
@@ -318,8 +324,8 @@ function processFlow(action) {
         hi: '📜 <b>नियम:</b><br>• रात 8:30 बजे वापसी अनिवार्य<br>• Parents visit: 6–8 PM<br>• रैगिंग बिल्कुल नहीं',
         mr: '📜 <b>नियम:</b><br>• रात्री 8:30 पर्यंत परतणे<br>• पालक भेट: 6–8 PM<br>• रॅगिंग मनाई'
       }[currentLang];
-      streamBotMessage(msg, null, null, () => moreHelp());
-    }, 700); return;
+      streamBotMessage(msg, HOSTEL_IMAGES, null, () => moreHelp());
+    }, 300); return;
   }
   if (lc === 'h_loc') {
     showTyping(); setTimeout(() => {
@@ -330,8 +336,8 @@ function processFlow(action) {
         hi: '📍 कैंपस अंदर – अलग ब्लॉक<br>बाभुळगाव (झ) NH No. 6, अकोला',
         mr: '📍 कॅम्पस आत – स्वतंत्र ब्लॉक<br>बाभूळगाव (झ) NH No. 6, अकोला'
       }[currentLang];
-      streamBotMessage(msg, ['hostel6.jpeg'], null, () => moreHelp());
-    }, 700); return;
+      streamBotMessage(msg, HOSTEL_IMAGES, null, () => moreHelp());
+    }, 300); return;
   }
   if (lc === 'h_full') { fetchBackend('hostel'); return; }
 
@@ -573,23 +579,40 @@ window.sendMessage = function() {
 let imgInterval = null;
 
 function showImgBg(images) {
+  if (!images || !images.length) return;
   clearInterval(imgInterval);
-  bgVideo.pause();
-  bgVideo.style.display = 'none';
+  if (bgVideo) {
+    bgVideo.pause();
+    bgVideo.style.display = 'none';
+  }
   let idx = 0;
   const hero = document.getElementById('heroSection');
+  if (!hero) return;
   function set() {
-    hero.style.cssText += `background-image:url(images/${images[idx]});background-size:cover;background-position:center;transition:background-image 0.8s ease;`;
+    const imgName = images[idx].trim();
+    hero.style.backgroundImage = `url('images/${imgName}')`;
+    hero.style.backgroundSize = 'cover';
+    hero.style.backgroundPosition = 'center';
+    hero.style.transition = 'background-image 0.8s ease-in-out';
   }
   set();
-  if (images.length > 1) imgInterval = setInterval(() => { idx = (idx + 1) % images.length; set(); }, 3000);
+  if (images.length > 1) {
+    imgInterval = setInterval(() => {
+      idx = (idx + 1) % images.length;
+      set();
+    }, 3200);
+  }
 }
 
 function restoreVideo() {
   clearInterval(imgInterval);
-  document.getElementById('heroSection').style.backgroundImage = '';
-  bgVideo.style.display = 'block';
-  playVideo(videoIdx);
+  const hero = document.getElementById('heroSection');
+  if (hero) hero.style.backgroundImage = '';
+  if (bgVideo) {
+    bgVideo.style.display = 'block';
+    bgVideo.style.opacity = '1';
+    playVideo(videoIdx, false);
+  }
 }
 
 /* ═══════════════════════════════════════════
