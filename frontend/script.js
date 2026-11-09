@@ -370,6 +370,34 @@ function processFlow(action) {
   if (lc === 'dept_chem')  { fetchBackend('chemical');               return; }
   if (lc === 'dept_mba')   { fetchBackend('mba');                    return; }
 
+  /* CANTEEN - Show Canteen photo in background */
+  if (lc === 'canteen' || lc === 'food') {
+    showImgBg(['canteen1.jpeg']);
+    fetchBackend('canteen');
+    return;
+  }
+
+  /* LIBRARY - Show Library photo in background */
+  if (lc === 'library' || lc === 'books') {
+    showImgBg(['library1.jpeg']);
+    fetchBackend('library');
+    return;
+  }
+
+  /* TRANSPORT - Show College Bus photo in background */
+  if (lc === 'transport' || lc === 'bus') {
+    showImgBg(['bus1.jpeg']);
+    fetchBackend('transport');
+    return;
+  }
+
+  /* CAMPUS - Show Campus building photo in background */
+  if (lc === 'campus' || lc === 'facilities') {
+    showImgBg(['hostel_front.jpeg', 'hostel_building.jpeg']);
+    fetchBackend('campus');
+    return;
+  }
+
   /* Everything else → PHP backend */
   fetchBackend(action);
 }
@@ -440,6 +468,20 @@ const LOCAL_QA = {
     hi: '<b>📖 केंद्रीय पुस्तकालय:</b><br>समय: सुबह 9 से शाम 5 बजे. 40,000+ पुस्तकें, जर्नल्स और डिजिटल ई-लाइब्रेरी.',
     mr: '<b>📖 मध्यवर्ती ग्रंथालय:</b><br>वेळ: सकाळी 9 ते संध्याकाळी 5. 40,000+ पुस्तके, मासिके आणि ई-लायब्ररी.',
     imgs: ['library1.jpeg']
+  },
+  transport: {
+    keys: ['transport', 'bus', 'vehicle', 'route', 'वाहतूक', 'बस', 'वाहन', 'गाडी'],
+    en: '<b>🚌 College Bus & Transport Facility</b><br>COET Akola operates dedicated college buses connecting Akola city, railway station, bus stand and major residential routes.<br><b>Timing:</b> Morning pickup & evening drop coinciding with college hours.',
+    hi: '<b>🚌 कॉलेज बस एवं परिवहन सुविधा:</b><br>अकोला शहर, रेलवे स्टेशन और बस स्टैंड से कॉलेज बस की सुविधा उपलब्ध है।',
+    mr: '<b>🚌 महाविद्यालयीन बस व वाहतूक सुविधा:</b><br>अकोला शहर, रेल्वे स्टेशन आणि बस स्थानकावरून विद्यार्थ्यांसाठी नियमित बस सेवा उपलब्ध आहे.',
+    imgs: ['bus1.jpeg']
+  },
+  campus: {
+    keys: ['campus', 'college', 'infrastructure', 'कॅम्पस', 'परिसर', 'कॉलेज'],
+    en: '<b>🏫 COET Akola Campus</b><br>Sprawling lush green campus with modern laboratories, central library, seminar halls, sports complex, Wi-Fi, and girls hostel.<br><b>Location:</b> Babhulgaon (Jhiri), NH-6, Akola.',
+    hi: '<b>🏫 COET अकोला कैंपस:</b><br>आधुनिक लैब्स, केंद्रीय पुस्तकालय, खेल मैदान और गर्ल्स हॉस्टल युक्त विशाल सुंदर परिसर।',
+    mr: '<b>🏫 COET अकोला परिसर:</b><br>अत्याधुनिक प्रयोगशाळा, मध्यवर्ती ग्रंथालय, क्रीडा संकुल आणि मुलींच्या वसतिगृहासह निसर्गरम्य भव्य कॅम्पस.',
+    imgs: ['hostel_front.jpeg', 'hostel_building.jpeg']
   }
 };
 
