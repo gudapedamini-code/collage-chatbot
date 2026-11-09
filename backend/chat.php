@@ -9,27 +9,35 @@
 // ============================================================
 
 // Load env
-function loadEnv($path) {
-    if (!file_exists($path)) return;
-    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0) continue;
-        if (strpos($line, '=') === false) continue;
-        list($key, $value) = explode('=', $line, 2);
-        $key = trim($key); $value = trim($value);
-        if (!empty($key)) { putenv("$key=$value"); $_ENV[$key] = $value; }
+if (!function_exists('loadEnv')) {
+    function loadEnv($path) {
+        if (!file_exists($path)) return;
+        $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line) || strpos($line, '#') === 0) continue;
+            if (strpos($line, '=') === false) continue;
+            list($key, $value) = explode('=', $line, 2);
+            $key = trim($key); 
+            $value = trim($value);
+            $value = trim($value, "\"'");
+            if (!empty($key)) { 
+                putenv("$key=$value"); 
+                $_ENV[$key] = $value; 
+            }
+        }
     }
 }
 loadEnv(__DIR__ . '/.env');
 
 // ── CORS Headers ──
-$allowedOrigin = getenv('ALLOWED_ORIGIN') ?: '*';
+$allowedOrigin = getenv('ALLOWED_ORIGIN') ?: ($_ENV['ALLOWED_ORIGIN'] ?? '*');
 header("Content-Type: application/json; charset=utf-8");
 header("Access-Control-Allow-Origin: $allowedOrigin");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, X-Requested-With");
+header("Access-Control-Allow-Headers: Content-Type, X-Requested-With, Authorization");
 header("X-Content-Type-Options: nosniff");
-header("X-Frame-Options: DENY");
+header("X-Frame-Options: SAMEORIGIN");
 
 // Handle preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -44,28 +52,32 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// ── Rate Limiting (simple session-based) ──
-session_start();
+// ── Rate Limiting (session-based) ──
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
 $now = time();
 $window = 60; // 1 minute
-$maxRequests = 30; // 30 requests per minute per user
+$maxRequests = 40; // 40 requests per minute
 
-if (!isset($_SESSION['requests'])) {
+if (!isset($_SESSION['requests']) || !is_array($_SESSION['requests'])) {
     $_SESSION['requests'] = [];
 }
 
 // Remove old requests outside window
 $_SESSION['requests'] = array_filter(
     $_SESSION['requests'],
-    fn($t) => ($now - $t) < $window
+    function($t) use ($now, $window) {
+        return ($now - $t) < $window;
+    }
 );
 
 if (count($_SESSION['requests']) >= $maxRequests) {
     http_response_code(429);
     echo json_encode([
-        "reply" => "⏳ Too many requests. Please wait a moment and try again.",
+        "reply" => "⏳ खूप जास्त विनंत्या पाठवल्या आहेत. कृपया एक मिनिट थांबा आणि पुन्हा प्रयत्न करा. / Too many requests. Please wait a moment.",
         "image" => null
-    ]);
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 $_SESSION['requests'][] = $now;
@@ -73,22 +85,24 @@ $_SESSION['requests'][] = $now;
 // ── Read & Sanitize Input ──
 $rawInput = file_get_contents("php://input");
 if (!$rawInput) {
-    echo json_encode(["reply" => "Please type a message.", "image" => null]);
+    echo json_encode(["reply" => "Please type a message. / कृपया काहीतरी टाइप करा.", "image" => null], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 $data = json_decode($rawInput, true);
-if (json_last_error() !== JSON_ERROR_NONE) {
+if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
     http_response_code(400);
-    echo json_encode(["error" => "Invalid JSON"]);
+    echo json_encode(["error" => "Invalid JSON payload"]);
     exit;
 }
 
-$message   = isset($data['message']) ? trim(strip_tags($data['message'])) : "";
-$forceLang = isset($data['lang'])    ? trim($data['lang'])                : null;
+$message   = isset($data['message']) ? trim(strip_tags((string)$data['message'])) : "";
+$forceLang = isset($data['lang'])    ? trim((string)$data['lang'])                : null;
 
 // Validate lang
-if (!in_array($forceLang, ['en','hi','mr',null])) $forceLang = null;
+if (!in_array($forceLang, ['en','hi','mr',null], true)) {
+    $forceLang = null;
+}
 
 // Max message length
 if (mb_strlen($message) > 500) {
@@ -100,7 +114,7 @@ if ($message === "") {
     echo json_encode([
         "reply" => "Please type a message. / कृपया कुछ लिखें। / कृपया काहीतरी टाइप करा.",
         "image" => null
-    ]);
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
@@ -121,10 +135,12 @@ try {
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode([
-        "reply" => "⚠️ Something went wrong. Please try again.",
+        "reply" => "⚠️ क्षमस्व, तांत्रिक अडचण आली आहे. कृपया थोड्या वेळाने प्रयत्न करा. / Something went wrong.",
         "image" => null
-    ]);
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } finally {
-    if (isset($conn)) $conn->close();
+    if (isset($conn) && $conn instanceof mysqli) {
+        $conn->close();
+    }
 }
 ?>

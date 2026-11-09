@@ -369,21 +369,46 @@ function fetchBackend(msg) {
   document.getElementById('sendBtn').disabled = true;
 
   showTyping();
-  const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:8080/coet_production/backend/chat.php'
-    : window.location.origin + '/backend/chat.php';
+
+  // Bulletproof dynamic API URL resolution:
+  // Works on localhost (any port), subfolders, or root domain
+  const API_URL = (function() {
+    const loc = window.location;
+    if (loc.pathname.includes('/frontend/')) {
+      return '../backend/chat.php';
+    }
+    const base = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+    return base + 'backend/chat.php';
+  })();
+
   fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message: msg, lang: currentLang })
   })
-  .then(r => r.json())
-  .then(data => {
+  .then(async r => {
+    let data = null;
+    try {
+      data = await r.json();
+    } catch (e) {
+      data = null;
+    }
+    return { ok: r.ok, data: data };
+  })
+  .then(res => {
     hideTyping();
+    const data = res.data;
+    if (!data) {
+      isStreaming = false;
+      document.getElementById('sendBtn').disabled = false;
+      addBotMsg("⚠️ <b>सर्व्हर एरर / Server Error</b><br>सर्व्हरकडून योग्य प्रतिसाद मिळाला नाही. कृपया पुन्हा प्रयत्न करा.");
+      return;
+    }
+
     const imgs = data.image
       ? data.image.split(",").map(s => s.trim()).filter(Boolean)
       : null;
-    const replyText = data.reply || "Sorry, no information found.";
+    const replyText = data.reply || (data.error ? `⚠️ <b>${data.error}</b>` : "Sorry, no information found.");
 
     if (imgs && imgs.length) showImgBg(imgs); else restoreVideo();
 
@@ -393,7 +418,7 @@ function fetchBackend(msg) {
     hideTyping();
     isStreaming = false;
     document.getElementById('sendBtn').disabled = false;
-    addBotMsg("⚠️ <b>Server not connected.</b><br>Please start XAMPP (Apache + MySQL) and reload.");
+    addBotMsg("⚠️ <b>सर्व्हरशी संपर्क होऊ शकला नाही / Server not connected</b><br>कृपया Apache आणि MySQL चालू असल्याची खात्री करा किंवा इंटरनेट कनेक्शन तपासा.");
   });
 }
 
@@ -581,32 +606,43 @@ setTimeout(() => {
     return s.def;
   }
 
+  let isGreetShown = false;
+
   function showGreetMsg(age, gender) {
+    if (isGreetShown) return;
+    isGreetShown = true;
     detAge=age; detGender=gender;
     const m = getMsg(age, gender);
-    document.getElementById('greetDetecting').style.display = 'none';
-    const box = document.getElementById('greetMessageBox'); box.style.display = 'block';
-    document.getElementById('greetHello').textContent = m.h;
-    document.getElementById('greetSub').innerHTML = m.s;
-    document.getElementById('greetEnterText').textContent = m.e;
+    const detEl = document.getElementById('greetDetecting');
+    if (detEl) detEl.style.display = 'none';
+    const box = document.getElementById('greetMessageBox'); 
+    if (box) box.style.display = 'block';
+    const helloEl = document.getElementById('greetHello');
+    if (helloEl) helloEl.textContent = m.h;
+    const subEl = document.getElementById('greetSub');
+    if (subEl) subEl.innerHTML = m.s;
+    const enterEl = document.getElementById('greetEnterText');
+    if (enterEl) enterEl.textContent = m.e;
     setTimeout(() => speak(m.h + '. ' + m.s.replace(/<[^>]*>/g,'')), 400);
   }
 
   function speak(txt) {
     if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(txt);
-    u.lang = greetLang==='hi' ? 'hi-IN' : greetLang==='mr' ? 'mr-IN' : 'en-IN';
-    u.rate=0.88; u.pitch=1.15; u.volume=0.92;
-    const vs = window.speechSynthesis.getVoices();
-    const pick = vs.find(v=>v.lang.startsWith(u.lang.split('-')[0])) || vs.find(v=>v.lang.startsWith('en'));
-    if (pick) u.voice = pick;
-    const body = document.getElementById('botAvatarBody');
-    const wav  = document.getElementById('speakWaves');
-    u.onstart = () => { body&&body.classList.add('talking'); wav&&wav.classList.add('active'); };
-    u.onend = u.onerror = () => { body&&body.classList.remove('talking'); wav&&wav.classList.remove('active'); };
-    if (!vs.length) { window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.speak(u); }
-    else window.speechSynthesis.speak(u);
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(txt);
+      u.lang = greetLang==='hi' ? 'hi-IN' : greetLang==='mr' ? 'mr-IN' : 'en-IN';
+      u.rate=0.88; u.pitch=1.15; u.volume=0.92;
+      const vs = window.speechSynthesis.getVoices();
+      const pick = vs.find(v=>v.lang.startsWith(u.lang.split('-')[0])) || vs.find(v=>v.lang.startsWith('en'));
+      if (pick) u.voice = pick;
+      const body = document.getElementById('botAvatarBody');
+      const wav  = document.getElementById('speakWaves');
+      u.onstart = () => { body&&body.classList.add('talking'); wav&&wav.classList.add('active'); };
+      u.onend = u.onerror = () => { body&&body.classList.remove('talking'); wav&&wav.classList.remove('active'); };
+      if (!vs.length) { window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.speak(u); }
+      else window.speechSynthesis.speak(u);
+    } catch(e) {}
   }
 
   window.setGreetLang = function(l) {
@@ -629,27 +665,71 @@ setTimeout(() => {
 
   // Face detection
   async function startFaceDetection() {
+    // 4.5s safety fallback guarantee so visitor is never stuck
+    const fallbackTimer = setTimeout(() => {
+      showGreetMsg(null, null);
+    }, 4500);
+
     const lbl = document.getElementById('detectLabel');
-    if (typeof faceapi === 'undefined') { setTimeout(()=>showGreetMsg(null,null), 1500); return; }
+    if (typeof faceapi === 'undefined') { 
+      setTimeout(() => {
+        clearTimeout(fallbackTimer);
+        showGreetMsg(null, null);
+      }, 1000); 
+      return; 
+    }
+
     try {
       if(lbl) lbl.textContent = 'Loading AI...';
-      const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
-      await Promise.all([faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL), faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL)]);
+      const MODEL_URL = 'https://cdn.jsdelivr.net/gh/cgarciagl/face-api.js@0.22.2/weights/';
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL), 
+        faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL)
+      ]);
+
       if(lbl) lbl.textContent = 'Starting camera...';
       const video = document.getElementById('faceVideo');
-      const stream = await navigator.mediaDevices.getUserMedia({video:{width:320,height:240,facingMode:'user'},audio:false});
-      video.srcObject = stream; await video.play();
+      if (!video || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        clearTimeout(fallbackTimer);
+        showGreetMsg(null, null);
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 320, height: 240, facingMode: 'user' },
+        audio: false
+      });
+      video.srcObject = stream; 
+      await video.play();
+
       if(lbl) lbl.textContent = 'Detecting... 👁️';
       let attempts = 0;
       const detect = async () => {
         attempts++;
-        const result = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withAgeAndGender();
-        if (result) { stream.getTracks().forEach(t=>t.stop()); showGreetMsg(Math.round(result.age), result.gender); }
-        else if (attempts < 10) setTimeout(detect, 500);
-        else { stream.getTracks().forEach(t=>t.stop()); showGreetMsg(null, null); }
+        try {
+          const result = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withAgeAndGender();
+          if (result) { 
+            clearTimeout(fallbackTimer);
+            stream.getTracks().forEach(t=>t.stop()); 
+            showGreetMsg(Math.round(result.age), result.gender); 
+          }
+          else if (attempts < 8) setTimeout(detect, 400);
+          else { 
+            clearTimeout(fallbackTimer);
+            stream.getTracks().forEach(t=>t.stop()); 
+            showGreetMsg(null, null); 
+          }
+        } catch(err) {
+          clearTimeout(fallbackTimer);
+          stream.getTracks().forEach(t=>t.stop());
+          showGreetMsg(null, null);
+        }
       };
-      setTimeout(detect, 800);
-    } catch(e) { showGreetMsg(null, null); }
+      setTimeout(detect, 500);
+    } catch(e) { 
+      clearTimeout(fallbackTimer);
+      showGreetMsg(null, null); 
+    }
   }
 
   window.addEventListener('load', () => setTimeout(startFaceDetection, 600));

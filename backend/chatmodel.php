@@ -147,11 +147,11 @@ function dbSearch($conn, $keyword, $lang) {
 
 // ── Gemini AI fallback ──
 function getAIFallback($userMessage, $lang) {
-    // ⚠️ ADD YOUR FREE GEMINI API KEY HERE
-    // Free key at: https://aistudio.google.com/app/apikey
-    $GEMINI_API_KEY = 'AIzaSyDv6o4L-FBL1RCZwCnvHB_ixgnjpLNJ2ug';
+    $GEMINI_API_KEY = getenv('GEMINI_API_KEY') ?: ($_ENV['GEMINI_API_KEY'] ?? '');
 
-    if ($GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') return null;
+    if (empty($GEMINI_API_KEY) || $GEMINI_API_KEY === 'your_gemini_api_key_here' || $GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+        return null;
+    }
 
     $langName = $lang==='hi' ? 'Hindi' : ($lang==='mr' ? 'Marathi' : 'English');
     $context = "You are the official chatbot of COET Akola (College of Engineering & Technology, Akola).
@@ -162,22 +162,48 @@ Address: Babhulgaon NH6 Akola 444104. Office: Mon-Sat 9AM-5PM.
 Answer in {$langName} using HTML <b> and <br> tags. Be friendly, concise and helpful.
 If unrelated to college, politely redirect to college topics.";
 
-    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY";
+    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . urlencode($GEMINI_API_KEY);
     $payload = json_encode([
         "contents"=>[["parts"=>[["text"=>$context."\n\nQuestion: ".$userMessage]]]],
         "generationConfig"=>["temperature"=>0.7,"maxOutputTokens"=>350]
     ]);
 
-    $ch = curl_init($url);
-    curl_setopt_array($ch,[
-        CURLOPT_RETURNTRANSFER=>true, CURLOPT_POST=>true,
-        CURLOPT_POSTFIELDS=>$payload,
-        CURLOPT_HTTPHEADER=>['Content-Type: application/json'],
-        CURLOPT_TIMEOUT=>8, CURLOPT_SSL_VERIFYPEER=>false,
-    ]);
-    $res = curl_exec($ch);
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+    $res = false;
+    $code = 0;
+
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch,[
+            CURLOPT_RETURNTRANSFER=>true, 
+            CURLOPT_POST=>true,
+            CURLOPT_POSTFIELDS=>$payload,
+            CURLOPT_HTTPHEADER=>['Content-Type: application/json'],
+            CURLOPT_TIMEOUT=>8, 
+            CURLOPT_SSL_VERIFYPEER=>false,
+        ]);
+        $res = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+    } else {
+        $opts = [
+            'http' => [
+                'method'  => 'POST',
+                'header'  => "Content-Type: application/json\r\n",
+                'content' => $payload,
+                'timeout' => 8,
+                'ignore_errors' => true
+            ],
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false
+            ]
+        ];
+        $streamCtx = stream_context_create($opts);
+        $res = @file_get_contents($url, false, $streamCtx);
+        if ($res && isset($http_response_header[0]) && preg_match('{HTTP\/\S*\s(\d{3})}', $http_response_header[0], $m)) {
+            $code = (int)$m[1];
+        }
+    }
 
     if ($code===200 && $res) {
         $data = json_decode($res,true);
