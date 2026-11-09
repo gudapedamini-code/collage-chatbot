@@ -48,13 +48,137 @@ let convState   = 'menu';
 let isStreaming = false;
 
 /* ═══════════════════════════════════════════
-   LANGUAGE
+   GLOBAL TEXT-TO-SPEECH (TTS) & VOICE ENGINE
+═══════════════════════════════════════════ */
+window.speakText = function(txt, lang = currentLang) {
+  if (!window.speechSynthesis) return;
+  try {
+    window.speechSynthesis.cancel();
+    // Clean HTML tags and markdown
+    const cleanText = txt.replace(/<[^>]*>/g, ' ').replace(/•/g, ' ').replace(/[\u{1F300}-\u{1F6FF}]/gu, '').trim();
+    if (!cleanText) return;
+
+    const u = new SpeechSynthesisUtterance(cleanText);
+    const targetCode = lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : 'en-IN';
+    u.lang = targetCode;
+    u.rate = 0.94;
+    u.pitch = 1.05;
+
+    const voices = window.speechSynthesis.getVoices();
+    let selectedVoice = null;
+    if (lang === 'mr') {
+      selectedVoice = voices.find(v => v.lang.toLowerCase().startsWith('mr')) ||
+                      voices.find(v => v.lang.toLowerCase().startsWith('hi')) ||
+                      voices.find(v => v.lang.includes('IN'));
+    } else if (lang === 'hi') {
+      selectedVoice = voices.find(v => v.lang.toLowerCase().startsWith('hi')) ||
+                      voices.find(v => v.lang.includes('IN'));
+    } else {
+      selectedVoice = voices.find(v => v.lang.toLowerCase().startsWith('en-in')) ||
+                      voices.find(v => v.lang.toLowerCase().startsWith('en'));
+    }
+
+    if (selectedVoice) u.voice = selectedVoice;
+
+    const body = document.getElementById('botAvatarBody');
+    const wav  = document.getElementById('speakWaves');
+    u.onstart = () => { if (body) body.classList.add('talking'); if (wav) wav.classList.add('active'); };
+    u.onend = u.onerror = () => { if (body) body.classList.remove('talking'); if (wav) wav.classList.remove('active'); };
+
+    if (!voices.length) {
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.speak(u);
+    } else {
+      window.speechSynthesis.speak(u);
+    }
+  } catch(e) {}
+};
+
+/* ═══════════════════════════════════════════
+   UPDATE QUICK CHIPS BY LANGUAGE
+═══════════════════════════════════════════ */
+function updateQuickChipsLanguage(lang) {
+  const qc = document.getElementById('quickChips');
+  if (!qc) return;
+  qc.style.display = 'flex';
+  const chipsConfig = {
+    mr: [
+      { action: 'principal', label: '🎓 प्राचार्य' },
+      { action: 'courses',   label: '📚 अभ्यासक्रम' },
+      { action: 'fee',       label: '💰 शुल्क' },
+      { action: 'hostel',    label: '🏠 वसतिगृह' },
+      { action: 'placement', label: '💼 प्लेसमेंट' },
+      { action: 'admission', label: '📋 प्रवेश' },
+      { action: 'canteen',   label: '🍽️ कॅन्टीन' },
+      { action: 'library',   label: '📖 ग्रंथालय' },
+      { action: 'transport', label: '🚌 वाहतूक' },
+      { action: 'contact',   label: '📞 संपर्क' }
+    ],
+    hi: [
+      { action: 'principal', label: '🎓 प्राचार्य' },
+      { action: 'courses',   label: '📚 कोर्स' },
+      { action: 'fee',       label: '💰 फीस' },
+      { action: 'hostel',    label: '🏠 हॉस्टल' },
+      { action: 'placement', label: '💼 प्लेसमेंट' },
+      { action: 'admission', label: '📋 एडमिशन' },
+      { action: 'canteen',   label: '🍽️ कैंटीन' },
+      { action: 'library',   label: '📖 पुस्तकालय' },
+      { action: 'transport', label: '🚌 परिवहन' },
+      { action: 'contact',   label: '📞 संपर्क' }
+    ],
+    en: [
+      { action: 'principal', label: '🎓 Principal' },
+      { action: 'courses',   label: '📚 Courses' },
+      { action: 'fee',       label: '💰 Fees' },
+      { action: 'hostel',    label: '🏠 Hostel' },
+      { action: 'placement', label: '💼 Placement' },
+      { action: 'admission', label: '📋 Admission' },
+      { action: 'canteen',   label: '🍽️ Canteen' },
+      { action: 'library',   label: '📖 Library' },
+      { action: 'transport', label: '🚌 Transport' },
+      { action: 'contact',   label: '📞 Contact' }
+    ]
+  };
+
+  const selected = chipsConfig[lang] || chipsConfig.en;
+  qc.innerHTML = selected.map(c => 
+    `<button class="chip" onclick="quickAsk('${c.action}')">${c.label}</button>`
+  ).join('');
+}
+
+/* ═══════════════════════════════════════════
+   LANGUAGE SWITCHER
 ═══════════════════════════════════════════ */
 window.setLang = function(lang) {
   currentLang = lang;
-  document.getElementById('userMsg').placeholder =
-    lang === 'en' ? 'Type your question...' :
-    lang === 'hi' ? 'यहाँ लिखें...' : 'येथे लिहा...';
+  
+  // 1. Update dropdown selection
+  const dd = document.getElementById('langDropdown');
+  if (dd) dd.value = lang;
+
+  // 2. Update input placeholder
+  const inp = document.getElementById('userMsg');
+  if (inp) {
+    inp.placeholder = lang === 'en' ? 'Type your question...' :
+                      lang === 'hi' ? 'यहाँ अपना प्रश्न लिखें...' : 'येथे तुमचा प्रश्न विचारा...';
+  }
+
+  // 3. Update quick chips immediately
+  updateQuickChipsLanguage(lang);
+
+  // 4. Update Smart Greeting overlay language if active
+  if (window.setGreetLangDirect) {
+    window.setGreetLangDirect(lang);
+  }
+
+  // 5. Send greeting in new language and SPEAK IMMEDIATELY
+  const announce = {
+    mr: '👋 <b>नमस्कार!</b> मी आता मराठीत माहिती देईन.<br>अभ्यासक्रम, शुल्क, वसतिगृह, प्राचार्य किंवा प्लेसमेंटबद्दल काय जाणून घ्यायचे आहे?',
+    hi: '👋 <b>नमस्ते!</b> अब मैं हिंदी में जानकारी दूंगा।<br>कोर्स, फीस, हॉस्टल, प्राचार्य या प्लेसमेंट के बारे में क्या जानना चाहते हैं?',
+    en: '👋 <b>Hello!</b> Switched to English.<br>What would you like to know about Courses, Fees, Hostel, or Admissions?'
+  }[lang] || 'Switched to English';
+
+  addBotMsg(announce);
+  window.speakText(announce, lang);
 };
 
 /* ═══════════════════════════════════════════
@@ -171,6 +295,10 @@ function streamBotMessage(html, images = null, chips = null, onDone = null) {
       scrollDown();
       isStreaming = false;
       document.getElementById('sendBtn').disabled = false;
+
+      // Speak response out loud in the current language
+      window.speakText(plainText, currentLang);
+
       if (onDone) onDone();
     }
   }
@@ -814,15 +942,19 @@ setTimeout(() => {
     } catch(e) {}
   }
 
-  window.setGreetLang = function(l) {
+  window.setGreetLangDirect = function(l) {
     greetLang = l; highlightLangBtn(l);
-    if (document.getElementById('greetHello').textContent) {
+    if (document.getElementById('greetHello') && document.getElementById('greetHello').textContent) {
       const m = getMsg(detAge, detGender);
       document.getElementById('greetHello').textContent = m.h;
       document.getElementById('greetSub').innerHTML = m.s;
       document.getElementById('greetEnterText').textContent = m.e;
-      speak(m.h + '. ' + m.s.replace(/<[^>]*>/g,''));
+      window.speakText(m.h + '. ' + m.s.replace(/<[^>]*>/g,''), l);
     }
+  };
+
+  window.setGreetLang = function(l) {
+    window.setLang(l);
   };
 
   window.closeGreeting = function() {
