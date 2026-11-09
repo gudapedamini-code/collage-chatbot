@@ -133,9 +133,9 @@ function streamBotMessage(html, images = null, chips = null, onDone = null) {
 
   function typeNext() {
     if (i < totalLen) {
-      // Adaptive speed: faster for long messages
-      const speed = totalLen > 300 ? 8 : totalLen > 150 ? 14 : 22;
-      const chunk = totalLen > 300 ? 6 : totalLen > 150 ? 4 : 2;
+      // High-speed smooth typing (instant user experience)
+      const speed = 6;
+      const chunk = totalLen > 300 ? 14 : totalLen > 150 ? 8 : 4;
 
       i = Math.min(i + chunk, totalLen);
       // Show partial plain text while typing
@@ -369,12 +369,101 @@ function processFlow(action) {
 }
 
 /* ═══════════════════════════════════════════
+   INSTANT LOCAL KNOWLEDGE BASE (0ms Latency)
+═══════════════════════════════════════════ */
+const LOCAL_QA = {
+  principal: {
+    keys: ['principal', 'director', 'thorat', 'प्राचार्य', 'डॉ थोरात'],
+    en: '<b>🎓 Principal</b><br><b>Dr. P.V. Thorat</b><br><b>Qualification:</b> Ph.D. in Chemical Engineering, M.Tech<br><b>Phone:</b> 9960590202<br><b>College:</b> College of Engineering and Technology, Akola<br><b>Affiliated to:</b> Sant Gadge Baba Amravati University<br><b>Office Hours:</b> Mon-Sat, 10:00 AM – 4:00 PM',
+    hi: '<b>🎓 प्राचार्य</b><br><b>डॉ. पी.व्ही. थोरात</b><br><b>योग्यता:</b> पीएच.डी. रासायनिक अभियांत्रिकी, एम.टेक<br><b>फोन:</b> 9960590202<br><b>कार्यालय समय:</b> सोम-शनि, सुबह 10 – शाम 4',
+    mr: '<b>🎓 प्राचार्य</b><br><b>डॉ. पी.व्ही. थोरात</b><br><b>पात्रता:</b> पीएच.डी. रासायनिक अभियांत्रिकी, एम.टेक<br><b>फोन:</b> 9960590202<br><b>कार्यालय वेळ:</b> सोम-शनि, सकाळी 10 – सायंकाळी 4',
+    imgs: null
+  },
+  courses: {
+    keys: ['courses', 'course', 'branch', 'degree', 'अभ्यासक्रम', 'कोर्स'],
+    en: '<b>📚 Courses Offered - COET Akola</b><br><br><b>U.G. Courses:</b><br>• B.E. Computer Science & Engg (180 seats)<br>• B.E. Information Technology (120 seats)<br>• B.E. Civil Engineering (60 seats)<br>• B.E. Mechanical Engineering (60 seats)<br>• B.E. Chemical Engineering (60 seats)<br>• B.Arch (Architecture)<br><br><b>P.G. & Other:</b><br>• MBA (60 seats)<br>• M.E. CSE / Chemical / Structural<br>• D.Arch (Diploma)',
+    hi: '<b>📚 COET अकोला में उपलब्ध कोर्स:</b><br>• बी.ई. कंप्यूटर साइंस (180 सीटें)<br>• बी.ई. आईटी (120 सीटें)<br>• बी.ई. सिविल / मैकेनिकल / केमिकल<br>• बी.आर्क (वास्तुकला)<br>• MBA (60 सीटें)<br>• M.E. एवं डिप्लोमा',
+    mr: '<b>📚 COET अकोला मधील अभ्यासक्रम:</b><br>• B.E. संगणक अभियांत्रिकी (180 जागा)<br>• B.E. माहिती तंत्रज्ञान (IT - 120 जागा)<br>• B.E. सिव्हिल / मेकॅनिकल / केमिकल<br>• B.Arch (वास्तुकला)<br>• MBA (60 जागा)<br>• M.E. आणि पदविका',
+    imgs: null
+  },
+  fee: {
+    keys: ['fee', 'fees', 'tuition', 'scholarship', 'शुल्क', 'फीस', 'शिष्यवृत्ती'],
+    en: '<b>💰 Fee Structure 2025-2026 - COET Akola</b><br><br>• <b>B.E. First Year:</b> Open: ₹1,20,531 | OBC: ₹69,439 | SC/ST: ₹3,531<br>• <b>B.Arch:</b> Open: ₹1,19,264 | OBC: ₹67,937<br>• <b>MBA:</b> Open: ₹1,01,864 | OBC: ₹56,410<br>• <b>D.Arch:</b> Open: ₹47,454<br><br><b>Scholarships:</b> Available for SC, ST, OBC, EWS, and Girls TFWS scheme.',
+    hi: '<b>💰 शुल्क संरचना 2025-2026:</b><br>• बी.ई. प्रथम वर्ष (Open): ₹1,20,531 | OBC: ₹69,439 | SC/ST: ₹3,531<br>• बी.आर्क: ₹1,19,264 | MBA: ₹1,01,864<br><b>छात्रवृत्ति:</b> SC, ST, OBC, EWS एवं TFWS उपलब्ध।',
+    mr: '<b>💰 फी रचना 2025-2026:</b><br>• B.E. प्रथम वर्ष (Open): ₹1,20,531 | OBC: ₹69,439 | SC/ST: ₹3,531<br>• B.Arch: ₹1,19,264 | MBA: ₹1,01,864<br><b>शिष्यवृत्ती:</b> SC, ST, OBC, EWS आणि मुलींसाठी TFWS उपलब्ध.',
+    imgs: null
+  },
+  hostel: {
+    keys: ['hostel', 'dormitory', 'room', 'हॉस्टल', 'वसतिगृह', 'छात्रावास'],
+    en: '<b>🏠 Hostel Facility - COET Akola</b><br><br><b>Girls Hostel:</b> Available inside campus.<br>• <b>Fee:</b> Approx ₹24,000 / year<br>• <b>Facilities:</b> 24x7 Security, CCTV, Wi-Fi, Hygienic Mess, Study Hall, RO Water.<br><b>Boys Hostel:</b> Private hostels & PGs available right outside campus gate.',
+    hi: '<b>🏠 छात्रावास (हॉस्टल) सुविधा:</b><br><b>गर्ल्स हॉस्टल:</b> कैंपस के अंदर उपलब्ध (₹24,000/वर्ष)<br>सुविधाएं: 24x7 सुरक्षा, CCTV, Wi-Fi, मेस, RO पानी.<br><b>बॉयज हॉस्टल:</b> कॉलेज गेट के बाहर निजी हॉस्टल व पीजी उपलब्ध हैं।',
+    mr: '<b>🏠 वसतिगृह सुविधा:</b><br><b>मुलींचे वसतिगृह:</b> कॅम्पसमध्ये उपलब्ध (अंदाजे ₹24,000/वर्ष)<br>सुविधा: 24x7 सुरक्षा, CCTV, Wi-Fi, मेस, RO पाणी.<br><b>मुलांचे वसतिगृह:</b> कॅम्पसबाहेर खाजगी वसतिगृह व PG उपलब्ध आहेत.',
+    imgs: ['hostel_front.jpeg','hostel_building.jpeg','hostel_corridor.jpeg','hostel_mess.jpeg']
+  },
+  placement: {
+    keys: ['placement', 'job', 'recruit', 'tcs', 'wipro', 'नौकरी', 'प्लेसमेंट', 'रोजगार'],
+    en: '<b>💼 Placement Cell - COET Akola</b><br><br>• <b>Placements:</b> 350+ Students placed every year.<br>• <b>Top Recruiters:</b> TCS, Wipro, Capgemini, Infosys, Cognizant, Tech Mahindra.<br>• <b>Highest Package:</b> ₹8 - 10 LPA | <b>Average:</b> ₹3.5 - 4.5 LPA.<br>• Dedicated Training & Placement Cell with soft skills & aptitude sessions.',
+    hi: '<b>💼 प्लेसमेंट सेल - COET अकोला</b><br>• 350+ छात्रों का प्रतिवर्ष प्लेसमेंट.<br>• प्रमुख कंपनियां: TCS, Wipro, Capgemini, Infosys.<br>• उच्चतम पैकेज: ₹8-10 LPA | औसत: ₹3.5-4.5 LPA.',
+    mr: '<b>💼 प्लेसमेंट विभाग - COET अकोला</b><br>• दरवर्षी 350+ विद्यार्थ्यांचे प्लेसमेंट.<br>• प्रमुख कंपन्या: TCS, Wipro, Capgemini, Infosys.<br>• सर्वोच्च पॅकेज: ₹8-10 LPA | सरासरी: ₹3.5-4.5 LPA.',
+    imgs: null
+  },
+  admission: {
+    keys: ['admission', 'admissions', 'apply', 'eligibility', 'प्रवेश', 'दाखिला'],
+    en: '<b>📋 Admission Procedure - COET Akola</b><br><br>• <b>Eligibility:</b> 12th (HSC) with PCM + MHT-CET / JEE Main score.<br>• <b>Process:</b> Through Maharashtra State CET Cell Centralized Admission Process (CAP).<br>• <b>College Code:</b> Institute Code available on DTE portal.<br>• <b>Helpline:</b> 9960590202 / Admissions Office.',
+    hi: '<b>📋 प्रवेश प्रक्रिया:</b><br>• पात्रता: 12वीं PCM + MHT-CET या JEE Main स्कोर.<br>• प्रक्रिया: महाराष्ट्र CET Cell CAP राउंड के माध्यम से.<br>• अधिक जानकारी के लिए: 9960590202',
+    mr: '<b>📋 प्रवेश प्रक्रिया:</b><br>• पात्रता: 12 वी PCM + MHT-CET किंवा JEE Main.<br>• प्रवेश: महाराष्ट्र CET Cell च्या CAP फेरीद्वारे.<br>• संपर्क: 9960590202',
+    imgs: null
+  },
+  contact: {
+    keys: ['contact', 'phone', 'location', 'address', 'संपर्क', 'फोन', 'पत्ता', 'स्थान', 'कहाँ है'],
+    en: '<b>📞 Contact & Location - COET Akola</b><br><b>Address:</b> Babhulgaon (Jhiri), National Highway No. 6, Akola - 444104, Maharashtra.<br><b>Phone:</b> 9960590202<br><b>Email:</b> principal@coetakola.ac.in<br><b>Website:</b> https://coetakola.ac.in',
+    hi: '<b>📞 संपर्क और पता:</b><br>बभुलगांव, राष्ट्रीय महामार्ग क्र. 6, अकोला - 444104.<br><b>फोन:</b> 9960590202 | <b>वेबसाइट:</b> https://coetakola.ac.in',
+    mr: '<b>📞 संपर्क आणि पत्ता:</b><br>बाभूळगाव, राष्ट्रीय महामार्ग क्र. 6, अकोला - 444104.<br><b>फोन:</b> 9960590202 | <b>वेबसाईट:</b> https://coetakola.ac.in',
+    imgs: null
+  },
+  canteen: {
+    keys: ['canteen', 'food', 'mess', 'eat', 'कॅन्टीन', 'कैंटीन', 'खाना'],
+    en: '<b>🍽️ Campus Canteen</b><br>Hygienic vegetarian breakfast, lunch, snacks, tea and coffee available at affordable student rates.',
+    hi: '<b>🍽️ कॉलेज कैंटीन:</b><br>स्वच्छ शाकाहारी नाश्ता, भोजन और चाय-कॉफ़ी किफायती दरों पर उपलब्ध।',
+    mr: '<b>🍽️ महाविद्यालय कॅन्टीन:</b><br>स्वच्छ आणि चवदार अल्पोपहार, जेवण आणि चहा-कॉफी सवलतीच्या दरात उपलब्ध.',
+    imgs: ['canteen1.jpeg']
+  },
+  library: {
+    keys: ['library', 'books', 'पुस्तकालय', 'ग्रंथालय'],
+    en: '<b>📖 Central Library</b><br>Timings: 9:00 AM – 5:00 PM (Mon-Sat). 40,000+ technical books, national/international journals, e-library & reading hall.',
+    hi: '<b>📖 केंद्रीय पुस्तकालय:</b><br>समय: सुबह 9 से शाम 5 बजे. 40,000+ पुस्तकें, जर्नल्स और डिजिटल ई-लाइब्रेरी.',
+    mr: '<b>📖 मध्यवर्ती ग्रंथालय:</b><br>वेळ: सकाळी 9 ते संध्याकाळी 5. 40,000+ पुस्तके, मासिके आणि ई-लायब्ररी.',
+    imgs: ['library1.jpeg']
+  }
+};
+
+function findLocalAnswer(text, lang) {
+  const t = text.toLowerCase();
+  for (const item of Object.values(LOCAL_QA)) {
+    for (const k of item.keys) {
+      if (t.includes(k)) {
+        return { reply: item[lang] || item.en, imgs: item.imgs };
+      }
+    }
+  }
+  return null;
+}
+
+/* ═══════════════════════════════════════════
    BACKEND FETCH (PHP + MySQL)
 ═══════════════════════════════════════════ */
 function fetchBackend(msg) {
   if (isStreaming) return;
   isStreaming = true;
   document.getElementById('sendBtn').disabled = true;
+
+  // 1. Instant Zero-Latency Response for common topics
+  const localMatch = findLocalAnswer(msg, currentLang);
+  if (localMatch) {
+    if (localMatch.imgs && localMatch.imgs.length) showImgBg(localMatch.imgs); else restoreVideo();
+    streamBotMessage(localMatch.reply, localMatch.imgs, null, () => moreHelp());
+    return;
+  }
 
   showTyping();
 
@@ -680,10 +769,15 @@ setTimeout(() => {
 
   // Face detection
   async function startFaceDetection() {
-    // 4.5s safety fallback guarantee so visitor is never stuck
+    // 2.0s fast fallback guarantee so visitor sees greeting quickly
     const fallbackTimer = setTimeout(() => {
       showGreetMsg(null, null);
-    }, 4500);
+    }, 2000);
+
+    // Pre-warm backend in background immediately
+    try {
+      fetch('https://collage-chatbot.onrender.com/backend/chat.php', { method: 'OPTIONS' }).catch(() => {});
+    } catch(e) {}
 
     const lbl = document.getElementById('detectLabel');
     if (typeof faceapi === 'undefined') { 
