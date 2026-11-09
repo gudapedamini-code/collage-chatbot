@@ -10,25 +10,33 @@ const videos = [
 let videoIdx = 0;
 const bgVideo = document.getElementById("bgVideo");
 
-function playVideo(i) {
+function playVideo(i, isInitial = false) {
   if (!bgVideo) return;
-  bgVideo.style.opacity = '0';
-  setTimeout(() => {
-    bgVideo.pause();
+  if (!isInitial) {
+    bgVideo.style.opacity = '0';
+    setTimeout(() => {
+      bgVideo.pause();
+      bgVideo.src = videos[i];
+      bgVideo.load();
+      bgVideo.muted = true;
+      bgVideo.playsInline = true;
+      bgVideo.play().catch(() => {});
+      bgVideo.style.opacity = '1';
+    }, 300);
+  } else {
     bgVideo.src = videos[i];
-    bgVideo.load();
     bgVideo.muted = true;
     bgVideo.playsInline = true;
     bgVideo.play().catch(() => {});
     bgVideo.style.opacity = '1';
-  }, 400);
+  }
 }
 if (bgVideo) {
   bgVideo.style.transition = 'opacity 0.4s ease';
-  playVideo(0);
+  playVideo(0, true);
   bgVideo.addEventListener("ended", () => {
     videoIdx = (videoIdx + 1) % videos.length;
-    playVideo(videoIdx);
+    playVideo(videoIdx, false);
   });
 }
 
