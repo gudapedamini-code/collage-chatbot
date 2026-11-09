@@ -1,13 +1,16 @@
 {
-  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/",
       "destination": "/frontend/index.html"
     },
     {
-      "source": "/(.*)",
-      "destination": "/frontend/$1"
+      "source": "/backend/chat.php",
+      "destination": "https://collage-chatbot.onrender.com/backend/chat.php"
+    },
+    {
+      "source": "/api/chat.php",
+      "destination": "https://collage-chatbot.onrender.com/backend/chat.php"
     }
   ]
 }
